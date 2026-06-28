@@ -5,7 +5,6 @@ Run with: uvicorn app:app --reload --port 8000
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 import joblib
 import numpy as np
 import os
@@ -63,6 +62,15 @@ def set_scenario(mode: str):
     state["phase"]    = 0
     return {"scenario": mode}
 
+@app.post("/api/reset")
+def reset_session():
+     """Reset session stats for a clean demo."""
+     state["session_start"] = time.time()
+     state["alert_count"]   = 0
+     state["anom_frames"]   = 0
+     state["total_frames"]  = 0
+     state["phase"]         = 0
+     return {"reset": True}
 
 @app.get("/api/stream")
 def stream():
@@ -89,7 +97,7 @@ def stream():
     fault_prob   = float(rf_model.predict_proba(obd_features)[0][1]) * 100
 
     # ── Run Isolation Forest on each CAN frame ────────────
-    anom_scores = []
+    
     for frame in frames:
         vec   = np.array([can_frame_to_feature_vector(frame)])
         score = if_model.decision_function(vec)[0]
@@ -122,6 +130,9 @@ def stream():
         threat = "warn"
     else:
         threat = "crit"
+    
+    if threat == "crit":
+        state["alert_count"] += 1
 
     return {
         "obd":         obd,
