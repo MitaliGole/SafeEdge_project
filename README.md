@@ -193,6 +193,10 @@ The frontend polls `http://127.0.0.1:8000/api/stream` every 600ms automatically.
 
 ## Team
 
-Built at [Hackathon Name] · [Date]
+Built at [Pandas] · [Date]: 29-06-2026
+Team Members:
+Mitali Gole (Leader) (Role: Frontend UI/UX developer)
+Anshika Raghuwanshi (Integration Testing and Documentations)
+Chetan Parmar (ML engineer and Backend lead)
 
 > *SafeEdge — because your vehicle's data shouldn't leave the vehicle.*
