@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeEdge — On-Device Vehicle Health & Threat Monitor</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo">SAFE<span class="logo-red">EDGE</span>
+      <span class="logo-version">v2.1 — EDGE AI</span>
+    </div>
+    <div class="scenario-btns">
+      <button class="sbtn active" id="btn-normal" onclick="setScenario('normal')">
+        <i class="ti ti-check"></i> NORMAL DRIVE
+      </button>
+      <button class="sbtn attack" id="btn-attack" onclick="setScenario('attack')">
+        <i class="ti ti-alert-triangle"></i> ATTACK + FAULT
+      </button>
+    </div>
+    <div class="header-meta">
+      <span class="sys-online" id="api-status">● CONNECTING...</span> &nbsp;|&nbsp;
+      <span id="tick-time">00:00:00</span><br />
+      EV HEAVY TRUCK — UNIT 4472
+    </div>
+  </header>
+
+  <!-- INTRUSION BANNER -->
+  <div class="intrusion-banner" id="intrusion-banner">
+    <i class="ti ti-shield-exclamation ib-icon"></i>
+    <div>
+      <div class="ib-title">INTRUSION DETECTED — CAN BUS FUZZING ATTACK</div>
+      <div class="ib-sub">Malformed frames detected &bull; Anomalous IDs flagged &bull; Isolating affected ECUs &bull; Fleet alert sent</div>
+    </div>
+    <button class="ib-close" onclick="dismissBanner()"><i class="ti ti-x"></i></button>
+  </div>
+
+  <!-- MAIN GRID -->
+  <main class="grid">
+
+    <!-- PANEL 1 : OBD-II Sensor Feed -->
+    <section class="panel">
+      <div class="panel-head">
+        <span class="panel-title"><i class="ti ti-cpu"></i> OBD-II Sensor Feed</span>
+        <span class="status-dot" id="obd-dot"></span>
+      </div>
+      <div class="sensor-grid">
+        <div class="sensor-card">
+          <div class="sensor-label">RPM</div>
+          <div class="sensor-val" id="val-rpm">— <span class="sensor-unit">rpm</span></div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-label">COOLANT</div>
+          <div class="sensor-val" id="val-cool">— <span class="sensor-unit">°C</span></div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-label">O2 VOLT</div>
+          <div class="sensor-val" id="val-o2">— <span class="sensor-unit">V</span></div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-label">THROTTLE</div>
+          <div class="sensor-val" id="val-thr">— <span class="sensor-unit">%</span></div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-label">BATT VOLT</div>
+          <div class="sensor-val" id="val-bv">— <span class="sensor-unit">V</span></div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-label">ENGINE LOAD</div>
+          <div class="sensor-val" id="val-load">— <span class="sensor-unit">%</span></div>
+        </div>
+      </div>
+      <div class="gauge-wrap">
+        <div class="gauge-label">FAULT PROBABILITY — RANDOM FOREST MODEL</div>
+        <div class="gauge-bar"><div class="gauge-fill" id="fault-fill" style="width:0%"></div></div>
+        <div class="gauge-val"><span id="fault-pct">0</span>%</div>
+      </div>
+      <div class="chart-area">
+        <canvas id="obd-chart"></canvas>
+      </div>
+      <div class="chart-legend">
+        <span><span class="legend-dot" style="background:#00b4ff"></span>RPM</span>
+        <span><span class="legend-dot" style="background:#f0a500"></span>Coolant °C</span>
+      </div>
+    </section>
+
+    <!-- PANEL 2 : CAN Bus Stream -->
+    <section class="panel">
+      <div class="panel-head">
+        <span class="panel-title"><i class="ti ti-network"></i> CAN Bus Message Stream</span>
+        <span class="status-dot" id="can-dot"></span>
+      </div>
+      <div class="can-header-row">
+        <span>TIMESTAMP</span>
+        <span>FRAME ID</span>
+        <span>DLC</span>
+        <span>PAYLOAD (HEX)</span>
+        <span>FLAG</span>
+      </div>
+      <div class="can-list" id="can-list"></div>
+      <div class="gauge-wrap">
+        <div class="gauge-label">ANOMALY SCORE — ISOLATION FOREST MODEL</div>
+        <div class="gauge-bar"><div class="gauge-fill" id="anom-fill" style="width:0%"></div></div>
+        <div class="gauge-val"><span id="anom-pct">0</span>%</div>
+      </div>
+      <div class="chart-area">
+        <canvas id="can-chart"></canvas>
+      </div>
+      <div class="chart-legend">
+        <span><span class="legend-dot" style="background:#ff3b3b"></span>Anomaly Score %</span>
+        <span><span class="legend-dot" style="background:#00b4ff"></span>Frame Rate /s</span>
+      </div>
+    </section>
+
+    <!-- PANEL 3 : Composite Risk -->
+    <section class="panel panel-wide">
+      <div class="panel-head">
+        <span class="panel-title"><i class="ti ti-radar"></i> Composite Risk Score &amp; Session Summary</span>
+        <span class="status-dot" id="risk-dot"></span>
+      </div>
+      <div class="bottom-row">
+
+        <!-- Arc Gauge -->
+        <div class="arc-wrap">
+          <svg class="arc-gauge" viewBox="0 0 160 140" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20,125 A70,70,0,1,1,140,125" fill="none" stroke="#1e2d3d" stroke-width="12" stroke-linecap="round"/>
+            <path id="arc-fill"
+              d="M20,125 A70,70,0,1,1,140,125"
+              fill="none" stroke="#00e87a" stroke-width="12"
+              stroke-linecap="round"
+              stroke-dasharray="219.9"
+              stroke-dashoffset="202"
+            />
+            <text id="arc-num" x="80" y="96" text-anchor="middle" class="arc-num-text">0</text>
+            <text x="80" y="112" text-anchor="middle" class="arc-sub-text">/100</text>
+            <text x="18"  y="135" class="arc-tick">0</text>
+            <text x="76"  y="22"  class="arc-tick" text-anchor="middle">50</text>
+            <text x="140" y="135" class="arc-tick" text-anchor="end">100</text>
+          </svg>
+          <div class="risk-level-badge" id="risk-level">CONNECTING</div>
+        </div>
+
+        <!-- Threat Assessment -->
+        <div class="risk-desc-col">
+          <div class="col-label">THREAT ASSESSMENT</div>
+          <div class="risk-desc" id="risk-desc">Connecting to SafeEdge backend...</div>
+          <div class="module-scores">
+            <div class="ms-item">
+              <span class="ms-label">RANDOM FOREST (OBD)</span>
+              <span class="ms-val" id="ms-obd">—</span>
+            </div>
+            <div class="ms-item">
+              <span class="ms-label">ISOLATION FOREST (CAN)</span>
+              <span class="ms-val" id="ms-can">—</span>
+            </div>
+            <div class="ms-item">
+              <span class="ms-label">COMPOSITE SCORE</span>
+              <span class="ms-val" id="ms-comp">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Event Log -->
+        <div class="log-col">
+          <div class="col-label">EVENT LOG</div>
+          <div class="event-log" id="event-log"></div>
+        </div>
+
+      </div>
+
+      <!-- Session Bar -->
+      <div class="session-bar">
+        <div class="sess-card">
+          <div class="sess-val" id="ss-time">0:00</div>
+          <div class="sess-lbl">SESSION</div>
+        </div>
+        <div class="sess-card">
+          <div class="sess-val warn-color" id="ss-alerts">0</div>
+          <div class="sess-lbl">ALERTS</div>
+        </div>
+        <div class="sess-card">
+          <div class="sess-val" id="ss-frames">0</div>
+          <div class="sess-lbl">FRAMES/S</div>
+        </div>
+        <div class="sess-card">
+          <div class="sess-val" id="ss-anom">0</div>
+          <div class="sess-lbl">ANOM FRAMES</div>
+        </div>
+        <div class="sess-card">
+          <div class="sess-val green-color">RANDOM FOREST</div>
+          <div class="sess-lbl">OBD MODEL</div>
+        </div>
+        <div class="sess-card">
+          <div class="sess-val green-color">ISOLATION FOREST</div>
+          <div class="sess-lbl">CAN MODEL</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
