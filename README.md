@@ -199,4 +199,3 @@ Mitali Gole (Leader) (Role: Frontend UI/UX developer)
 Anshika Raghuwanshi (Integration Testing and Documentations)
 Chetan Parmar (ML engineer and Backend lead)
 
-> *SafeEdge — because your vehicle's data shouldn't leave the vehicle.*
