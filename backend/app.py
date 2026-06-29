@@ -139,3 +139,23 @@ def stream():
             "anom_frames": state["anom_frames"],
         }
     }
+@app.get("/api/explain")
+def explain():
+    """
+    Returns Random Forest feature importances +
+    which sensor is currently most at risk.
+    """
+    feature_names = ["RPM", "Coolant", "O2 Volt", "Throttle", "Battery", "Load"]
+    importances   = rf_model.feature_importances_.tolist()
+
+    # Zip and sort by importance descending
+    ranked = sorted(
+        zip(feature_names, importances),
+        key=lambda x: x[1],
+        reverse=True
+    )
+
+    return {
+        "features": [{"name": r[0], "importance": round(r[1] * 100, 1)} for r in ranked],
+        "top_sensor": ranked[0][0],
+    }
