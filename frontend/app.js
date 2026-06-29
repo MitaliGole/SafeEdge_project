@@ -421,7 +421,6 @@ async function fetchEta() {
   } catch(_) {}
 }
 
-// ── Main poll loop — calls real FastAPI backend
 // ── Main poll loop
 async function fetchAndUpdate() {
   try {

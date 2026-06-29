@@ -149,8 +149,6 @@ def explain():
         "features": [{"name": r[0], "importance": round(r[1] * 100, 1)} for r in ranked],
         "top_sensor": ranked[0][0],
     }
-        },
-    }
 
 
 # ── Serve Frontend ──────────────────────────────────────
