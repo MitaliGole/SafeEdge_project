@@ -227,7 +227,7 @@ async function fetchAndUpdate() {
     setSensor("val-cool", Math.round(obd.coolant),   "°C",  100,  110);
     setSensor("val-o2",   obd.o2.toFixed(3),         "V",   0.7,  0.9);
     setSensor("val-thr",  Math.round(obd.throttle),  "%",    80,   92);
-    setSensor("val-bv",   Math.round(obd.battery),   "V",     0,  340);
+    setSensor("val-bv",   Math.round(obd.battery),   "V",     385,  375);
     setSensor("val-load", Math.round(obd.load),      "%",    75,   90);
 
     setGauge("fault-fill", "fault-pct", fault_pct);
