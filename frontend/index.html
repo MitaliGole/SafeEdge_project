@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SafeEdge — On-Device Vehicle Health & Threat Monitor</title>
+  <title>SafeEdge by Tata Elxsi Threat Monitor</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" />
@@ -15,7 +15,7 @@
   <!-- HEADER -->
   <header class="header">
     <div class="logo">SAFE<span class="logo-red">EDGE</span>
-      <span class="logo-version">v2.1 — EDGE AI</span>
+      <span class="logo-version">v2.1 — Tata ELXSI EDGE AI</span>
     </div>
     <div class="scenario-btns">
       <button class="sbtn active" id="btn-normal" onclick="setScenario('normal')">
@@ -28,7 +28,7 @@
     <div class="header-meta">
       <span class="sys-online" id="api-status">● CONNECTING...</span> &nbsp;|&nbsp;
       <span id="tick-time">00:00:00</span><br />
-      EV HEAVY TRUCK — UNIT 4472
+      TATA STARBUS EV  — VIN: MBT1234567   |  FLEET: MUMBAI DEPOT
     </div>
   </header>
 
@@ -203,7 +203,16 @@
         </div>
       </div>
     </section>
-
+<!-- PANEL 4: Tata Fleet Overview -->
+  <section class="panel panel-wide">
+     <div class="panel-head">
+       <span class="panel-title"><i class="ti ti-bus"></i> Tata Fleet Overview — Mumbai Depot</span>
+       <button class="sbtn" onclick="generateFleetReport()" style="font-size:10px;padding:4px 12px">
+         <i class="ti ti-file-report"></i> FLEET REPORT
+       </button>
+     </div>
+     <div class="fleet-grid" id="fleet-grid"></div>
+   </section>
   </main>
 
   <script src="app.js"></script>

@@ -8,6 +8,32 @@ let intrusionShown = false;
 let alertCount     = 0;
 let audioCtx       = null;
 
+// ── Tata Fleet Data (static + 1 live vehicle)
+ const FLEET = [
+   { vin:"MBT1234567", name:"Starbus EV #01", route:"Mumbai–Pune",  status:"crit", score:78, live:true  },
+   { vin:"MBT2345678", name:"Starbus EV #02", route:"Mumbai–Thane", status:"safe", score:12, live:false },
+   { vin:"MBT3456789", name:"Ace EV #07",     route:"Depot Yard",   status:"safe", score:8,  live:false },
+   { vin:"MBT4567890", name:"Prima EV #03",   route:"Pune–Nashik",  status:"warn", score:44, live:false },
+   { vin:"MBT5678901", name:"Signa EV #11",   route:"Mumbai–Surat", status:"safe", score:19, live:false },
+ ];
+
+ function renderFleet(liveScore, liveStatus) {
+   const grid = $("fleet-grid");
+   if (!grid) return;
+   grid.innerHTML = FLEET.map(v => {
+     const s = v.live ? liveStatus : v.status;
+     const score = v.live ? Math.round(liveScore) : v.score;
+     const icon = s==="safe" ? "●" : s==="warn" ? "▲" : "■";
+     return `
+       <div class="fleet-card ${s}">
+         <div class="fleet-vin">VIN: ${v.vin}</div>
+         <div class="fleet-name">${v.name}</div>
+         <div class="fleet-score ${s}">${score}</div>
+         <div class="fleet-status ${s}">${icon} ${s.toUpperCase()}</div>
+         <div class="fleet-meta">${v.route}</div>
+       </div>`;
+   }).join("");
+ }
 // ── Chart history
 const HISTORY   = 30;
 const rpmHist   = new Array(HISTORY).fill(0);
@@ -190,6 +216,7 @@ async function fetchAndUpdate() {
 
     // Arc + threat
     updateArc(composite);
+    renderFleet(composite, threat);
     setThreatLevel(threat);
 
     // Module scores
@@ -246,3 +273,35 @@ addLog("info", "SafeEdge frontend initialised — connecting to backend...");
 addLog("info", "Models: Random Forest (OBD) + Isolation Forest (CAN)");
 setInterval(fetchAndUpdate, 600);
 fetchAndUpdate();
+// ── Fleet Report Generator
+ window.generateFleetReport = function() {
+   const now = new Date().toLocaleString();
+   const rows = FLEET.map(v => `
+     <tr style="border-bottom:1px solid #ddd">
+       <td style="padding:8px">${v.name}</td>
+       <td style="padding:8px;font-family:monospace">${v.vin}</td>
+       <td style="padding:8px">${v.route}</td>
+       <td style="padding:8px;color:${v.status==="safe"?"green":v.status==="warn"?"orange":"red"};font-weight:bold">
+         ${v.status.toUpperCase()}</td>
+       <td style="padding:8px;text-align:center">${v.score}/100</td>
+     </tr>`).join("");
+   const html = `<html><head><title>SafeEdge Fleet Report</title>
+   <style>body{font-family:Arial,sans-serif;padding:40px;color:#111}
+   h1{color:#1a237e}h2{color:#555;font-weight:400;font-size:15px}
+   table{width:100%;border-collapse:collapse;margin-top:20px}
+   th{background:#1a237e;color:#fff;padding:10px;text-align:left}
+   .footer{margin-top:30px;font-size:12px;color:#999}</style></head>
+   <body>
+   <h1>🚌 SafeEdge — Fleet Health Report</h1>
+   <h2>Tata Motors Fleet · Mumbai Depot · Generated: ${now}</h2>
+   <h2>Powered by Tata Elxsi Edge AI · Random Forest + Isolation Forest + SPC</h2>
+   <table><thead><tr>
+     <th>Vehicle</th><th>VIN</th><th>Route</th><th>Status</th><th>Risk Score</th>
+   </tr></thead><tbody>${rows}</tbody></table>
+   <div class="footer">SafeEdge v2.1 — Confidential — Tata Motors Internal Use</div>
+   <script>window.print()</script>
+   </body></html>\`;
+   const w = window.open("","_blank");
+   w.document.write(html);
+   w.document.close();
+};
