@@ -3,9 +3,17 @@ SafeEdge — FastAPI Backend
 Run with: uvicorn app:app --reload --port 8000
 """
 
-from fastapi import FastAPI
+try:
+    from fastapi import FastAPI
+except Exception:  # pragma: no cover
+    raise ImportError("Missing dependency 'fastapi'. Install with 'pip install fastapi[all]' or 'pip install fastapi'.")
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+
+try:
+    from fastapi.staticfiles import StaticFiles
+except ImportError:  # pragma: no cover
+    from starlette.staticfiles import StaticFiles
+
 import joblib
 import numpy as np
 import os
