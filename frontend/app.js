@@ -211,6 +211,216 @@ const canChart = new Chart($("can-chart").getContext("2d"), {
   }},
 });
 
+// ── Pie chart for feature importance
+const PIE_COLORS = ["#00e87a","#00b4ff","#f0a500","#ff3b3b","#a855f7","#ec4899"];
+
+const pieChart = new Chart($("pie-chart").getContext("2d"), {
+  type: "doughnut",
+  data: {
+    labels: [],
+    datasets: [{
+      data: [],
+      backgroundColor: PIE_COLORS,
+      borderColor: "#0d1218",
+      borderWidth: 2,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    animation: { duration: 600 },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        enabled: true,
+        callbacks: {
+          label: ctx => ` ${ctx.label}: ${ctx.parsed.toFixed(1)}%`
+        }
+      }
+    },
+    cutout: "65%",
+  }
+});
+
+// ── Feature bar renderer
+function renderFeatureBars(features) {
+  const container = $("feature-bars");
+  container.innerHTML = "";
+  const max = features[0].importance;
+
+  features.forEach((f, i) => {
+    const color = f.importance === max ? "#ff3b3b"
+      : f.importance > 20 ? "#f0a500"
+      : "#00b4ff";
+
+    const row = document.createElement("div");
+    row.className = "feat-row";
+    row.innerHTML = `
+      <span class="feat-name">${f.name.toUpperCase()}</span>
+      <div class="feat-bar-wrap">
+        <div class="feat-bar-fill" style="width:${f.importance}%;background:${color}"></div>
+      </div>
+      <span class="feat-pct">${f.importance}%</span>
+    `;
+    container.appendChild(row);
+  });
+}
+
+// ── Callout card updater
+function updateCallout(topSensor, faultPct) {
+  const card = $("callout-card");
+  const level = faultPct > 65 ? "crit" : faultPct > 35 ? "warn" : "";
+  card.className = "callout-card " + level;
+  $("callout-sensor").textContent = topSensor.toUpperCase();
+
+  const descriptions = {
+    "RPM":      "Engine speed anomaly detected.\nRapid RPM fluctuation suggests\nmechanical stress or load spike.",
+    "Coolant":  "Thermal system under stress.\nCoolant temperature rising beyond\nnormal operating threshold.",
+    "O2 Volt":  "Oxygen sensor voltage unstable.\nFuel mixture irregularity detected\nin combustion cycle.",
+    "Throttle": "Throttle position irregular.\nUnexpected input pattern suggests\ncontrol system interference.",
+    "Battery":  "Battery voltage dropping.\nPower supply instability may affect\ncritical vehicle systems.",
+    "Load":     "Engine load critically high.\nSustained overload detected across\nmultiple decision trees.",
+  };
+  $("callout-desc").textContent = descriptions[topSensor] || "Sensor anomaly detected.";
+}
+
+// ── Pie chart updater
+function updatePie(features) {
+  pieChart.data.labels                    = features.map(f => f.name);
+  pieChart.data.datasets[0].data         = features.map(f => f.importance);
+  pieChart.data.datasets[0].backgroundColor = PIE_COLORS.slice(0, features.length);
+  pieChart.update();
+
+  // Legend
+  const legend = $("pie-legend");
+  legend.innerHTML = "";
+  features.forEach((f, i) => {
+    const row = document.createElement("div");
+    row.className = "pie-leg-row";
+    row.innerHTML = `
+      <span class="pie-leg-dot" style="background:${PIE_COLORS[i]}"></span>
+      <span>${f.name}: ${f.importance}%</span>
+    `;
+    legend.appendChild(row);
+  });
+}
+
+// ── Fetch explainability data (every 3 seconds, not every tick)
+let explainTick = 0;
+async function fetchExplain() {
+  try {
+    const res  = await fetch(`${API}/api/explain`);
+    const data = await res.json();
+    renderFeatureBars(data.features);
+    updateCallout(data.top_sensor, parseFloat($("fault-pct").textContent));
+    updatePie(data.features);
+  } catch(_) {}
+}
+// ── ETA chart history
+const etaCoolHist = new Array(HISTORY).fill(0);
+const etaLoadHist = new Array(HISTORY).fill(0);
+const etaBattHist = new Array(HISTORY).fill(0);
+const etaO2Hist   = new Array(HISTORY).fill(0);
+
+const etaChart = new Chart($("eta-chart").getContext("2d"), {
+  type: "line",
+  data: {
+    labels,
+    datasets: [
+      { data: [...etaCoolHist], borderColor: "#ff3b3b", borderWidth: 1.5, fill: false, tension: 0.3, yAxisID: "yEta" },
+      { data: [...etaLoadHist], borderColor: "#f0a500", borderWidth: 1.5, fill: false, tension: 0.3, yAxisID: "yEta" },
+      { data: [...etaBattHist], borderColor: "#a855f7", borderWidth: 1.5, fill: false, tension: 0.3, yAxisID: "yEta" },
+      { data: [...etaO2Hist],   borderColor: "#00b4ff", borderWidth: 1.5, fill: false, tension: 0.3, yAxisID: "yEta" },
+    ]
+  },
+  options: {
+    ...SHARED,
+    scales: {
+      x: { display: false },
+      yEta: {
+        display: true,
+        position: "left",
+        min: 0,
+        max: 10,
+        grid: { color: "rgba(30,45,61,0.7)" },
+        ticks: {
+          color: "#3a5060",
+          font: { size: 9, family: "Share Tech Mono" },
+          maxTicksLimit: 5,
+          callback: v => v >= 999 ? "SAFE" : v + "h"
+        },
+        border: { display: false }
+      }
+    }
+  }
+});
+
+// ── ETA card renderer
+function renderEtaCards(predictions) {
+  const container = $("eta-cards");
+  container.innerHTML = "";
+
+  predictions.forEach((p, i) => {
+    const isSafe = p.eta_hrs >= 999;
+    const displayTime = isSafe ? "SAFE" : p.eta_hrs < 1
+      ? `${Math.round(p.eta_hrs * 60)}m`
+      : `${p.eta_hrs.toFixed(1)}h`;
+
+    // Progress bar: how close to threshold (0% = safe, 100% = at threshold)
+    const progressPct = isSafe ? 5 : Math.min(99, Math.round((1 - p.eta_hrs / 10) * 100));
+    const barColor = p.status === "crit" ? "#ff3b3b" : p.status === "warn" ? "#f0a500" : "#00e87a";
+
+    const card = document.createElement("div");
+    card.className = "eta-card " + (p.status !== "ok" ? p.status : "");
+    card.innerHTML = `
+      <div class="eta-system">${p.system.toUpperCase()}</div>
+      <div class="eta-time ${p.status !== "ok" ? p.status : ""}">${displayTime}</div>
+      <div class="eta-time-label">${isSafe ? "no fault predicted" : "estimated to failure"}</div>
+      <div class="eta-progress-wrap">
+        <div class="eta-progress-fill" style="width:${progressPct}%;background:${barColor}"></div>
+      </div>
+      <div class="eta-meta">
+        <span class="eta-current">Now: ${p.current} / Limit: ${p.threshold}</span>
+        <span class="eta-trend ${p.trend}">${p.trend.toUpperCase()}</span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// ── Fetch ETA predictions
+async function fetchEta() {
+  try {
+    const res  = await fetch(`${API}/api/predict-eta`);
+    const data = await res.json();
+    const preds = data.predictions;
+
+    renderEtaCards(preds);
+
+    // Update chart history — cap at 10h for display
+    const cap = v => Math.min(v >= 999 ? 10 : v, 10);
+    etaCoolHist.push(cap(preds[0].eta_hrs)); etaCoolHist.shift();
+    etaLoadHist.push(cap(preds[1].eta_hrs)); etaLoadHist.shift();
+    etaBattHist.push(cap(preds[2].eta_hrs)); etaBattHist.shift();
+    etaO2Hist.push(cap(preds[3].eta_hrs));   etaO2Hist.shift();
+
+    etaChart.data.datasets[0].data = [...etaCoolHist];
+    etaChart.data.datasets[1].data = [...etaLoadHist];
+    etaChart.data.datasets[2].data = [...etaBattHist];
+    etaChart.data.datasets[3].data = [...etaO2Hist];
+    etaChart.update("none");
+
+    // Log critical ETAs
+    preds.forEach(p => {
+      if (p.status === "crit" && p.eta_hrs < 0.5)
+        addLog("crit", `${p.system}: FAILURE IN ${Math.round(p.eta_hrs*60)} MINUTES`);
+      else if (p.status === "warn")
+        addLog("warn", `${p.system}: ETA ${p.eta_hrs.toFixed(1)}h — maintenance advised`);
+    });
+
+  } catch(_) {}
+}
+
 // ── Main poll loop
 async function fetchAndUpdate() {
   try {
@@ -284,4 +494,8 @@ async function fetchAndUpdate() {
 addLog("info", "SafeEdge frontend initialised — connecting to backend...");
 addLog("info", "Models: Random Forest (OBD) + Isolation Forest (CAN)");
 setInterval(fetchAndUpdate, 600);
+setInterval(fetchExplain, 3000);
+setInterval(fetchEta, 3000);
 fetchAndUpdate();
+fetchExplain();
+fetchEta();
