@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SafeEdge — On-Device Vehicle Health & Threat Monitor</title>
+  <title>SafeEdge by Tata Elxsi Threat Monitor</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" />
@@ -15,7 +15,7 @@
   <!-- HEADER -->
   <header class="header">
     <div class="logo">SAFE<span class="logo-red">EDGE</span>
-      <span class="logo-version">v2.1 — EDGE AI</span>
+      <span class="logo-version">v2.1 — Tata ELXSI EDGE AI</span>
     </div>
     <div class="scenario-btns">
       <button class="sbtn active" id="btn-normal" onclick="setScenario('normal')">
@@ -28,7 +28,7 @@
     <div class="header-meta">
       <span class="sys-online" id="api-status">● CONNECTING...</span> &nbsp;|&nbsp;
       <span id="tick-time">00:00:00</span><br />
-      EV HEAVY TRUCK — UNIT 4472
+      TATA STARBUS EV  — VIN: MBT1234567   |  FLEET: MUMBAI DEPOT
     </div>
   </header>
 
@@ -203,88 +203,16 @@
         </div>
       </div>
     </section>
-
-  <!-- PANEL 4 : Model Explainability -->
-    <section class="panel panel-wide" id="panel-explain">
-      <div class="panel-head">
-        <span class="panel-title">
-          <i class="ti ti-brain"></i> Model Explainability — Random Forest Feature Importance
-        </span>
-        <span class="explain-badge">LIVE XAI</span>
-      </div>
-
-      <div class="explain-body">
-
-        <!-- Bar chart of feature importances -->
-        <div class="explain-chart-col">
-          <div class="col-label">SENSOR CONTRIBUTION TO FAULT DECISION</div>
-          <div class="feature-bars" id="feature-bars">
-            <!-- Injected by JS -->
-          </div>
-        </div>
-
-        <!-- Top sensor callout -->
-        <div class="explain-callout-col">
-          <div class="col-label">PRIMARY TRIGGER</div>
-          <div class="callout-card" id="callout-card">
-            <div class="callout-icon"><i class="ti ti-alert-circle"></i></div>
-            <div class="callout-sensor" id="callout-sensor">—</div>
-            <div class="callout-desc" id="callout-desc">Waiting for data...</div>
-          </div>
-
-          <div class="col-label" style="margin-top:16px">WHY THIS MATTERS</div>
-          <div class="explain-why">
-            The <strong>Random Forest</strong> model runs 100 decision trees in parallel on-device.
-            Each tree votes on fault probability. Feature importance shows which sensor
-            data each tree relied on most — making the AI decision fully transparent to engineers.
-          </div>
-        </div>
-
-        <!-- Mini donut / pie breakdown -->
-        <div class="explain-pie-col">
-          <div class="col-label">IMPORTANCE BREAKDOWN</div>
-          <div class="pie-wrap">
-            <canvas id="pie-chart" style="max-width:180px;max-height:180px"></canvas>
-          </div>
-          <div class="pie-legend" id="pie-legend"></div>
-        </div>
-
-      </div>
-    </section>
-
-  <!-- PANEL 5 : Predictive Maintenance ETA -->
-    <section class="panel panel-wide" id="panel-eta">
-      <div class="panel-head">
-        <span class="panel-title">
-          <i class="ti ti-clock-bolt"></i> Predictive Maintenance — Time to Failure Forecast
-        </span>
-        <span class="explain-badge">LINEAR REGRESSION</span>
-      </div>
-
-      <div class="eta-body">
-
-        <!-- 4 system cards -->
-        <div class="eta-cards" id="eta-cards">
-          <!-- injected by JS -->
-        </div>
-
-        <!-- Timeline chart -->
-        <div class="eta-chart-col">
-          <div class="col-label">FAILURE PROBABILITY TREND</div>
-          <div class="chart-area" style="height:160px;border-top:none">
-            <canvas id="eta-chart"></canvas>
-          </div>
-          <div class="chart-legend">
-            <span><span class="legend-dot" style="background:#ff3b3b"></span>Coolant</span>
-            <span><span class="legend-dot" style="background:#f0a500"></span>Engine Load</span>
-            <span><span class="legend-dot" style="background:#a855f7"></span>Battery</span>
-            <span><span class="legend-dot" style="background:#00b4ff"></span>O2 System</span>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
+<!-- PANEL 4: Tata Fleet Overview -->
+  <section class="panel panel-wide">
+     <div class="panel-head">
+       <span class="panel-title"><i class="ti ti-bus"></i> Tata Fleet Overview — Mumbai Depot</span>
+       <button class="sbtn" onclick="generateFleetReport()" style="font-size:10px;padding:4px 12px">
+         <i class="ti ti-file-report"></i> FLEET REPORT
+       </button>
+     </div>
+     <div class="fleet-grid" id="fleet-grid"></div>
+   </section>
   </main>
 
   <script src="app.js"></script>

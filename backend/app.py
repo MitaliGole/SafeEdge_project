@@ -86,10 +86,9 @@ def stream():
 
     # ── Run Random Forest on OBD data ────────────────────
     obd_features = np.array([obd_to_feature_vector(obd)])
-    fault_prob   = float(rf_model.predict_proba(obd_features)[0][1]) * 100
+    fault_prob = float(rf_model.predict_proba(obd_features)[0][1]) * 100
 
-    # ── Run Isolation Forest on each CAN frame ────────────
-    anom_scores = []
+    # Isolation Forest
     for frame in frames:
         vec   = np.array([can_frame_to_feature_vector(frame)])
         score = if_model.decision_function(vec)[0]
@@ -122,6 +121,9 @@ def stream():
         threat = "warn"
     else:
         threat = "crit"
+    
+    if threat == "crit":
+        state["alert_count"] += 1
 
     return {
         "obd":         obd,
@@ -164,10 +166,5 @@ def explain():
 
 
 # ── Serve Frontend ──────────────────────────────────────
-# IMPORTANT: this must be the LAST thing registered. Any @app.get("/...")
-# routes defined above take priority over this mount, but nothing should
-# be defined after it, and nothing above should claim "/" itself.
-
-frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
-
-app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
+frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")
+app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")

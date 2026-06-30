@@ -169,6 +169,7 @@ window.setScenario = async (s) => {
   if (s === "normal") {
     $("intrusion-banner").classList.remove("show");
     addLog("ok", "Scenario: Normal drive mode");
+    await fetch(`${API}/api/reset`, {method: "POST"});
   } else {
     addLog("warn", "Scenario: Attack + Fault simulation started");
   }

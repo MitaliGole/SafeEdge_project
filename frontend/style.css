@@ -144,6 +144,26 @@ html, body { width:100%; min-height:100vh; background:var(--bg); color:var(--tex
   .session-bar { grid-template-columns:repeat(3,1fr); }
   .bottom-row { grid-template-columns:1fr; }
 }
+<<<<<<< HEAD
+ /* FLEET PANEL */
+ .fleet-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; padding:12px; }
+ .fleet-card { background:var(--bg3); border:1px solid var(--border); border-radius:6px; padding:12px; display:flex; flex-direction:column; gap:6px; }
+ .fleet-card.safe { border-color:rgba(0,232,122,0.4); }
+ .fleet-card.warn { border-color:rgba(240,165,0,0.4); }
+ .fleet-card.crit { border-color:rgba(255,59,59,0.5); background:rgba(255,59,59,0.04); }
+ .fleet-vin { font-family:var(--mono); font-size:10px; color:var(--text3); }
+ .fleet-name { font-family:var(--sans); font-weight:600; font-size:13px; color:var(--text); }
+ .fleet-status { font-family:var(--mono); font-size:11px; display:flex; align-items:center; gap:5px; margin-top:2px; }
+ .fleet-status.safe { color:var(--green); }
+ .fleet-status.warn { color:var(--amber); }
+ .fleet-status.crit { color:var(--red); }
+ .fleet-meta { font-family:var(--mono); font-size:10px; color:var(--text3); }
+ .fleet-score { font-family:var(--mono); font-size:18px; font-weight:700; }
+ .fleet-score.safe { color:var(--green); }
+ .fleet-score.warn { color:var(--amber); }
+ .fleet-score.crit { color:var(--red); }
+ @media(max-width:900px){ .fleet-grid{ grid-template-columns:1fr 1fr; } }
+=======
 /* ══════════════════════════════════════════════════════════
    PANEL 4 — MODEL EXPLAINABILITY
 ══════════════════════════════════════════════════════════ */
@@ -414,3 +434,4 @@ html, body { width:100%; min-height:100vh; background:var(--bg); color:var(--tex
   flex-direction: column;
   gap: 8px;
 }
+>>>>>>> 6edcdcf39eaedf7fff143427391cedda8008dae3
