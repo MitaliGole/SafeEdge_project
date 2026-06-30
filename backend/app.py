@@ -49,8 +49,8 @@ state = {
 
 # ── Routes ───────────────────────────────────────────────
 
-@app.get("/")
-def root():
+@app.get("/api/status")
+def status():
     return {"status": "SafeEdge API running"}
 
 
@@ -139,6 +139,8 @@ def stream():
             "anom_frames": state["anom_frames"],
         }
     }
+
+
 @app.get("/api/explain")
 def explain():
     """
@@ -162,8 +164,10 @@ def explain():
 
 
 # ── Serve Frontend ──────────────────────────────────────
+# IMPORTANT: this must be the LAST thing registered. Any @app.get("/...")
+# routes defined above take priority over this mount, but nothing should
+# be defined after it, and nothing above should claim "/" itself.
 
 frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
 app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
-    }
