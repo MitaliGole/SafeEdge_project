@@ -152,4 +152,7 @@ def explain():
 
 
 # ── Serve Frontend ──────────────────────────────────────
-app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
+
+frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
+
+app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
