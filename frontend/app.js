@@ -35,29 +35,22 @@ function ensureAudioCtx() {
 
 function playAlertPing() {
   try {
-    const ctx = ensureAudioCtx();
-    const fire = () => {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx.resume().then(() => {
       [880, 660, 880].forEach((freq, i) => {
-        const osc  = ctx.createOscillator();
-        const gain = ctx.createGain();
+        const osc  = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(audioCtx.destination);
         osc.frequency.value = freq;
-        const s = ctx.currentTime + i * 0.18;
+        const s = audioCtx.currentTime + i * 0.18;
         gain.gain.setValueAtTime(0.2, s);
         gain.gain.exponentialRampToValueAtTime(0.001, s + 0.3);
         osc.start(s);
         osc.stop(s + 0.32);
       });
-    };
-    if (ctx.state === "suspended") {
-      ctx.resume().then(fire);
-    } else {
-      fire();
-    }
-  } catch (e) {
-    console.error("Audio error:", e);
-  }
+    });
+  } catch(e) { console.error("Audio error:", e); }
 }
 
 document.addEventListener("click", () => {
@@ -342,6 +335,17 @@ async function fetchAndUpdate() {
 
 // ── Boot
 initCharts();
+// ── Unlock audio on first click (browser requirement)
+document.addEventListener("click", () => {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx.resume();
+  } else {
+    audioCtx.resume();
+  }
+}, { once: false });
+
+// ── Boot
 addLog("info", "SafeEdge frontend initialised — connecting to backend...");
 addLog("info", "Models: Random Forest (OBD) + Isolation Forest (CAN)");
 setInterval(fetchAndUpdate, 600);
