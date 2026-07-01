@@ -166,3 +166,12 @@ def predict_eta():
         ]
 
     return {"predictions": predictions, "scenario": scenario, "phase": phase}
+@app.post("/api/reset")
+def reset_session():
+    state["scenario"]      = "normal"
+    state["phase"]         = 0
+    state["session_start"] = time.time()
+    state["alert_count"]   = 0
+    state["anom_frames"]   = 0
+    state["total_frames"]  = 0
+    return {"status": "reset"}

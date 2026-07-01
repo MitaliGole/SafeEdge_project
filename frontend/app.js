@@ -1,6 +1,6 @@
 "use strict";
 
-const API = window.location.origin
+const API = "http://127.0.0.1:8000"
 const $   = id => document.getElementById(id);
 
 // ── State
