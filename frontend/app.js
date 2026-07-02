@@ -7,19 +7,35 @@ const $   = id => document.getElementById(id);
 let intrusionShown = false;
 let alertCount     = 0;
 let alarmPlaying   = false;
+let audioUnlocked  = false;
 
-// ── Real alarm audio (put alarm.mp3 in frontend folder)
+// ── Real alarm audio (place alarm.mp3 in the SAME folder as index.html)
 const alarmAudio = new Audio("alarm.mp3");
-alarmAudio.loop   = true;
-alarmAudio.volume = 1.0;
+alarmAudio.loop     = true;
+alarmAudio.volume   = 1.0;
+alarmAudio.preload  = "auto";
+
+// Log if the file itself fails to load (wrong path / missing file)
+alarmAudio.addEventListener("error", () => {
+  console.error("alarm.mp3 failed to load — check that it sits next to index.html");
+});
 
 function playAlertPing() {
   if (alarmPlaying) return;
   try {
     alarmAudio.currentTime = 0;
-    alarmAudio.play().catch(e => console.warn("Audio blocked:", e));
-    alarmPlaying = true;
-  } catch(e) {
+    const p = alarmAudio.play();
+    if (p !== undefined) {
+      p.then(() => { alarmPlaying = true; })
+       .catch(e => {
+         // Most likely blocked because the user hasn't interacted with the page yet
+         console.warn("Audio blocked (needs a user click first):", e);
+         alarmPlaying = false;
+       });
+    } else {
+      alarmPlaying = true;
+    }
+  } catch (e) {
     console.warn("Audio error:", e);
   }
 }
@@ -28,9 +44,25 @@ function stopAlertPing() {
   try {
     alarmAudio.pause();
     alarmAudio.currentTime = 0;
+  } catch (e) {
+    // ignore
+  } finally {
     alarmPlaying = false;
-  } catch(e) {}
+  }
 }
+
+// ── Unlock audio on first user interaction (browser autoplay policy)
+function unlockAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  alarmAudio.play().then(() => {
+    alarmAudio.pause();
+    alarmAudio.currentTime = 0;
+  }).catch(() => { /* silent — will retry on real alert */ });
+}
+["click", "keydown", "touchstart"].forEach(evt =>
+  document.addEventListener(evt, unlockAudio, { once: true })
+);
 
 // ── Chart history
 const HISTORY   = 30;
@@ -38,18 +70,13 @@ const rpmHist   = new Array(HISTORY).fill(0);
 const coolHist  = new Array(HISTORY).fill(0);
 const anomHist  = new Array(HISTORY).fill(0);
 const frameHist = new Array(HISTORY).fill(0);
-const labels    = Array.from({length: HISTORY}, (_, i) => i);
+const labels    = Array.from({ length: HISTORY }, (_, i) => i);
 
 // ── Helpers
 const fmt2   = n => String(Math.floor(n)).padStart(2, "0");
 const nowStr = () => { const d = new Date(); return `${fmt2(d.getHours())}:${fmt2(d.getMinutes())}:${fmt2(d.getSeconds())}`; };
-const nowMs  = () => nowStr() + "." + String(Math.floor(Math.random()*999)).padStart(3,"0");
-const clamp  = (v,lo,hi) => Math.min(hi, Math.max(lo, v));
-
-// ── Unlock audio on first click (browser requirement)
-document.addEventListener("click", () => {
-  alarmAudio.load();
-}, { once: true });
+const nowMs  = () => nowStr() + "." + String(Math.floor(Math.random() * 999)).padStart(3, "0");
+const clamp  = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 // ── Arc gauge
 function updateArc(pct) {
@@ -136,7 +163,11 @@ window.setScenario = async (s) => {
   } else {
     addLog("warn", "Scenario: Attack + Fault simulation started");
   }
-  await fetch(`${API}/api/scenario/${s}`, { method: "POST" });
+  try {
+    await fetch(`${API}/api/scenario/${s}`, { method: "POST" });
+  } catch (e) {
+    console.warn("Failed to set scenario:", e);
+  }
 };
 
 window.dismissBanner = () => {
@@ -156,32 +187,40 @@ const SHARED = {
 
 const obdChart = new Chart($("obd-chart").getContext("2d"), {
   type: "line",
-  data: { labels, datasets: [
-    { data: [...rpmHist],  borderColor: "#00b4ff", borderWidth: 1.5, fill: true, backgroundColor: "rgba(0,180,255,0.05)", yAxisID: "yRPM",  tension: 0.3 },
-    { data: [...coolHist], borderColor: "#f0a500", borderWidth: 1.5, fill: true, backgroundColor: "rgba(240,165,0,0.05)",  yAxisID: "yCool", tension: 0.3 },
-  ]},
-  options: { ...SHARED, scales: {
-    x: { display: false },
-    yRPM:  { display: true, position: "left",  grid: { color: "rgba(30,45,61,0.7)" }, ticks: { color: "#3a5060", font: { size: 9, family: "Share Tech Mono" }, maxTicksLimit: 4 }, border: { display: false } },
-    yCool: { display: true, position: "right", min: 70, max: 130, grid: { drawOnChartArea: false }, ticks: { color: "#3a5060", font: { size: 9, family: "Share Tech Mono" }, maxTicksLimit: 4 }, border: { display: false } },
-  }},
+  data: {
+    labels, datasets: [
+      { data: [...rpmHist],  borderColor: "#00b4ff", borderWidth: 1.5, fill: true, backgroundColor: "rgba(0,180,255,0.05)", yAxisID: "yRPM",  tension: 0.3 },
+      { data: [...coolHist], borderColor: "#f0a500", borderWidth: 1.5, fill: true, backgroundColor: "rgba(240,165,0,0.05)",  yAxisID: "yCool", tension: 0.3 },
+    ]
+  },
+  options: {
+    ...SHARED, scales: {
+      x: { display: false },
+      yRPM:  { display: true, position: "left",  grid: { color: "rgba(30,45,61,0.7)" }, ticks: { color: "#3a5060", font: { size: 9, family: "Share Tech Mono" }, maxTicksLimit: 4 }, border: { display: false } },
+      yCool: { display: true, position: "right", min: 70, max: 130, grid: { drawOnChartArea: false }, ticks: { color: "#3a5060", font: { size: 9, family: "Share Tech Mono" }, maxTicksLimit: 4 }, border: { display: false } },
+    }
+  },
 });
 
 const canChart = new Chart($("can-chart").getContext("2d"), {
   type: "line",
-  data: { labels, datasets: [
-    { data: [...anomHist],  borderColor: "#ff3b3b", borderWidth: 1.5, fill: true,  backgroundColor: "rgba(255,59,59,0.08)", yAxisID: "yAnom",   tension: 0.3, borderDash: [4,2] },
-    { data: [...frameHist], borderColor: "#00b4ff", borderWidth: 1,   fill: false,                                           yAxisID: "yFrames", tension: 0.3 },
-  ]},
-  options: { ...SHARED, scales: {
-    x: { display: false },
-    yAnom:   { display: true, position: "left",  min: 0, max: 100, grid: { color: "rgba(30,45,61,0.7)" }, ticks: { color: "#3a5060", font: { size: 9, family: "Share Tech Mono" }, maxTicksLimit: 4 }, border: { display: false } },
-    yFrames: { display: true, position: "right", grid: { drawOnChartArea: false }, ticks: { color: "#3a5060", font: { size: 9, family: "Share Tech Mono" }, maxTicksLimit: 4 }, border: { display: false } },
-  }},
+  data: {
+    labels, datasets: [
+      { data: [...anomHist],  borderColor: "#ff3b3b", borderWidth: 1.5, fill: true,  backgroundColor: "rgba(255,59,59,0.08)", yAxisID: "yAnom",   tension: 0.3, borderDash: [4, 2] },
+      { data: [...frameHist], borderColor: "#00b4ff", borderWidth: 1,   fill: false,                                          yAxisID: "yFrames", tension: 0.3 },
+    ]
+  },
+  options: {
+    ...SHARED, scales: {
+      x: { display: false },
+      yAnom:   { display: true, position: "left",  min: 0, max: 100, grid: { color: "rgba(30,45,61,0.7)" }, ticks: { color: "#3a5060", font: { size: 9, family: "Share Tech Mono" }, maxTicksLimit: 4 }, border: { display: false } },
+      yFrames: { display: true, position: "right", grid: { drawOnChartArea: false }, ticks: { color: "#3a5060", font: { size: 9, family: "Share Tech Mono" }, maxTicksLimit: 4 }, border: { display: false } },
+    }
+  },
 });
 
 // ── Pie chart for explainability
-const PIE_COLORS = ["#00e87a","#00b4ff","#f0a500","#ff3b3b","#a855f7","#ec4899"];
+const PIE_COLORS = ["#00e87a", "#00b4ff", "#f0a500", "#ff3b3b", "#a855f7", "#ec4899"];
 
 const pieChart = new Chart($("pie-chart").getContext("2d"), {
   type: "doughnut",
@@ -270,21 +309,25 @@ const etaO2Hist   = new Array(HISTORY).fill(0);
 
 const etaChart = new Chart($("eta-chart").getContext("2d"), {
   type: "line",
-  data: { labels, datasets: [
-    { data: [...etaCoolHist], borderColor: "#ff3b3b", borderWidth: 1.5, fill: false, tension: 0.3, yAxisID: "yEta" },
-    { data: [...etaLoadHist], borderColor: "#f0a500", borderWidth: 1.5, fill: false, tension: 0.3, yAxisID: "yEta" },
-    { data: [...etaBattHist], borderColor: "#a855f7", borderWidth: 1.5, fill: false, tension: 0.3, yAxisID: "yEta" },
-    { data: [...etaO2Hist],   borderColor: "#00b4ff", borderWidth: 1.5, fill: false, tension: 0.3, yAxisID: "yEta" },
-  ]},
-  options: { ...SHARED, scales: {
-    x: { display: false },
-    yEta: {
-      display: true, position: "left", min: 0, max: 10,
-      grid: { color: "rgba(30,45,61,0.7)" },
-      ticks: { color: "#3a5060", font: { size: 9, family: "Share Tech Mono" }, maxTicksLimit: 5, callback: v => v >= 10 ? "SAFE" : v + "h" },
-      border: { display: false }
+  data: {
+    labels, datasets: [
+      { data: [...etaCoolHist], borderColor: "#ff3b3b", borderWidth: 1.5, fill: false, tension: 0.3, yAxisID: "yEta" },
+      { data: [...etaLoadHist], borderColor: "#f0a500", borderWidth: 1.5, fill: false, tension: 0.3, yAxisID: "yEta" },
+      { data: [...etaBattHist], borderColor: "#a855f7", borderWidth: 1.5, fill: false, tension: 0.3, yAxisID: "yEta" },
+      { data: [...etaO2Hist],   borderColor: "#00b4ff", borderWidth: 1.5, fill: false, tension: 0.3, yAxisID: "yEta" },
+    ]
+  },
+  options: {
+    ...SHARED, scales: {
+      x: { display: false },
+      yEta: {
+        display: true, position: "left", min: 0, max: 10,
+        grid: { color: "rgba(30,45,61,0.7)" },
+        ticks: { color: "#3a5060", font: { size: 9, family: "Share Tech Mono" }, maxTicksLimit: 5, callback: v => v >= 10 ? "SAFE" : v + "h" },
+        border: { display: false }
+      }
     }
-  }},
+  },
 });
 
 // ── ETA card renderer
@@ -353,7 +396,7 @@ async function fetchAndUpdate() {
     addCanRows(can_frames);
 
     const e = session.elapsed;
-    $("ss-time").textContent   = `${Math.floor(e/60)}:${fmt2(e%60)}`;
+    $("ss-time").textContent   = `${Math.floor(e / 60)}:${fmt2(e % 60)}`;
     $("ss-frames").textContent = session.frames_per_s;
     $("ss-anom").textContent   = session.anom_frames;
 
@@ -368,6 +411,11 @@ async function fetchAndUpdate() {
       addLog("crit", "INTRUSION ALERT — CAN fuzzing attack confirmed by Isolation Forest");
     }
 
+    // Auto-clear the alarm once the anomaly score drops back down
+    if (anom_pct <= 60 && intrusionShown && alarmPlaying) {
+      stopAlertPing();
+    }
+
     rpmHist.push(obd.rpm);      rpmHist.shift();
     coolHist.push(obd.coolant); coolHist.shift();
     anomHist.push(anom_pct);    anomHist.shift();
@@ -380,7 +428,7 @@ async function fetchAndUpdate() {
     canChart.data.datasets[1].data = [...frameHist];
     canChart.update("none");
 
-  } catch(err) {
+  } catch (err) {
     $("api-status").textContent = "● API OFFLINE";
     $("api-status").style.color = "#ff3b3b";
   }
@@ -393,7 +441,7 @@ async function fetchExplain() {
     renderFeatureBars(data.features);
     updateCallout(data.top_sensor, parseFloat($("fault-pct").textContent));
     updatePie(data.features);
-  } catch(_) {}
+  } catch (_) { /* API may not be up yet — ignore silently */ }
 }
 
 async function fetchEta() {
@@ -417,11 +465,11 @@ async function fetchEta() {
 
     preds.forEach(p => {
       if (p.status === "crit" && p.eta_hrs < 0.5)
-        addLog("crit", `${p.system}: FAILURE IN ${Math.round(p.eta_hrs*60)} MINUTES`);
+        addLog("crit", `${p.system}: FAILURE IN ${Math.round(p.eta_hrs * 60)} MINUTES`);
       else if (p.status === "warn")
         addLog("warn", `${p.system}: ETA ${p.eta_hrs.toFixed(1)}h — maintenance advised`);
     });
-  } catch(_) {}
+  } catch (_) { /* API may not be up yet — ignore silently */ }
 }
 
 // ════════════════════════════════════════
