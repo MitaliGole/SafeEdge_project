@@ -1,6 +1,6 @@
 "use strict";
 
-const API = "http://127.0.0.1:8000";
+const API = "http://safeedge-project-1.onrender.com"; // Change this to your backend URL if needed
 const $   = id => document.getElementById(id);
 
 // ── State
