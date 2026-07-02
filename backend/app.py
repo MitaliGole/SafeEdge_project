@@ -54,7 +54,7 @@ state = {
 
 @app.get("/")
 def root():
-    return {"status": "SafeEdge API running", "dashboard": "http://127.0.0.1:8000/app"}
+    return {"status": "SafeEdge API running", "dashboard": " https://safeedge-project-1.onrender.com"}
 
 
 @app.post("/api/scenario/{mode}")
