@@ -17,6 +17,8 @@ from simulator import (
     obd_to_feature_vector,
     can_frame_to_feature_vector,
 )
+from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI(title="SafeEdge API")
 
